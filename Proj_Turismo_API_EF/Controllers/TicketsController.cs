@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +30,7 @@ namespace Proj_Turismo_API_EF.Controllers
           {
               return NotFound();
           }
-            return await _context.Ticket.Include(t => t.Origin).ThenInclude(x => x.) .ToListAsync();
+            return await _context.Ticket.ToListAsync();
         }
 
         // GET: api/Tickets/5
@@ -40,7 +41,14 @@ namespace Proj_Turismo_API_EF.Controllers
           {
               return NotFound();
           }
-            var ticket = await _context.Ticket.FindAsync(id);
+            //var ticket = await _context.Ticket.FindAsync(id);
+            var ticket = await _context.Ticket
+                .Include(t => t.Origin)
+                    .ThenInclude(a => a.City)
+                .Include(t => t.Destination)
+                    .ThenInclude(a => a.City)
+                .Include(t => t.Client)
+                .FirstOrDefaultAsync(t => t.Id == id);
 
             if (ticket == null)
             {
@@ -90,6 +98,27 @@ namespace Proj_Turismo_API_EF.Controllers
           {
               return Problem("Entity set 'Proj_Turismo_API_EFContext.Ticket'  is null.");
           }
+          var originAddress = await _context.Address.Include(a => a.City).FirstOrDefaultAsync(a => a.Id == ticket.Origin.Id);
+            if(originAddress == null)
+            {
+                return NotFound("Origin address not found.");
+            }
+            ticket.Origin = originAddress;
+
+            var destinationAddress = await _context.Address.Include(a => a.City).FirstOrDefaultAsync(a => a.Id == ticket.Destination.Id);
+            if(destinationAddress == null)
+            {
+                return NotFound("Destination address not found.");
+            }
+            ticket.Destination = destinationAddress;
+
+            var client = await _context.Client.FirstAsync(c => c.Id == ticket.Client.Id);
+            if(client == null)
+            {
+                return NotFound("Client not found.");
+            }
+            ticket.Client = client;
+
             _context.Ticket.Add(ticket);
             await _context.SaveChangesAsync();
 
