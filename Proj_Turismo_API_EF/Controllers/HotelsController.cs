@@ -29,7 +29,7 @@ namespace Proj_Turismo_API_EF.Controllers
           {
               return NotFound();
           }
-            return await _context.Hotel.Include(h => h.Address).ToListAsync();
+            return await _context.Hotel.Include(h => h.Address.City).ToListAsync();
         }
 
         // GET: api/Hotels/5
@@ -41,13 +41,14 @@ namespace Proj_Turismo_API_EF.Controllers
               return NotFound();
           }
             //var hotel = await _context.Hotel.FindAsync(id);
-            var hotel = await _context.Hotel.Include(h => h.Address).Where(h => h.Id == id).FirstOrDefaultAsync();
+            var hotel = await _context.Hotel
+                .Include(h => h.Address.City)
+                .FirstOrDefaultAsync(h => h.Id == id);
 
             if (hotel == null)
             {
                 return NotFound();
             }
-
             return hotel;
         }
 

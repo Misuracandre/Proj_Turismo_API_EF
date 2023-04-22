@@ -26,21 +26,27 @@ namespace Proj_Turismo_API_EF.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Ticket>>> GetTicket()
         {
-          if (_context.Ticket == null)
-          {
-              return NotFound();
-          }
-            return await _context.Ticket.ToListAsync();
+            if (_context.Ticket == null)
+            {
+                return NotFound();
+            }
+            return await _context.Ticket
+                .Include(t => t.Origin)
+                    .ThenInclude(a => a.City)
+                .Include(t => t.Destination)
+                    .ThenInclude(a => a.City)
+                .Include(t => t.Client)
+                    .ToListAsync();
         }
 
         // GET: api/Tickets/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Ticket>> GetTicket(int id)
         {
-          if (_context.Ticket == null)
-          {
-              return NotFound();
-          }
+            if (_context.Ticket == null)
+            {
+                return NotFound();
+            }
             //var ticket = await _context.Ticket.FindAsync(id);
             var ticket = await _context.Ticket
                 .Include(t => t.Origin)
@@ -94,26 +100,26 @@ namespace Proj_Turismo_API_EF.Controllers
         [HttpPost]
         public async Task<ActionResult<Ticket>> PostTicket(Ticket ticket)
         {
-          if (_context.Ticket == null)
-          {
-              return Problem("Entity set 'Proj_Turismo_API_EFContext.Ticket'  is null.");
-          }
-          var originAddress = await _context.Address.Include(a => a.City).FirstOrDefaultAsync(a => a.Id == ticket.Origin.Id);
-            if(originAddress == null)
+            if (_context.Ticket == null)
+            {
+                return Problem("Ticket is null.");
+            }
+            var originAddress = await _context.Address.Include(a => a.City).FirstOrDefaultAsync(a => a.Id == ticket.Origin.Id);
+            if (originAddress == null)
             {
                 return NotFound("Origin address not found.");
             }
             ticket.Origin = originAddress;
 
             var destinationAddress = await _context.Address.Include(a => a.City).FirstOrDefaultAsync(a => a.Id == ticket.Destination.Id);
-            if(destinationAddress == null)
+            if (destinationAddress == null)
             {
                 return NotFound("Destination address not found.");
             }
             ticket.Destination = destinationAddress;
 
             var client = await _context.Client.FirstAsync(c => c.Id == ticket.Client.Id);
-            if(client == null)
+            if (client == null)
             {
                 return NotFound("Client not found.");
             }
